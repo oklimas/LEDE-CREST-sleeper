@@ -8,7 +8,7 @@
 
 slurm_sleeper() {
 # Copyright for this function can be found in slurm_sleeper_function_copy.txt
-local status_awk=$($parentdir/SLURM-CHECK.sh "$1")
+local status_awk=$(parentdir/SLURM-CHECK.sh "$1")
 local status=$(echo "$status_awk" | awk '{print $1}')
 local seconds=$(echo "$status_awk" | awk '{print $4}')
 ! [[ $status =~ ^[0-9]+$ ]] && { echo "ERROR status is not a number. Check SLURM_CHECK.sh for possible cause." ; exit 1 ; } # Sanity check
@@ -36,7 +36,7 @@ while [[ "$status" -lt 4 ]]; do
     # do not lower the minimal time below 5 s without the approval of
     # your cluster admins
     sleep "$sleep_s"s
-    status_awk=$($parentdir/SLURM-CHECK.sh "$1")
+    status_awk=$(parentdir/SLURM-CHECK.sh "$1")
      status=$(echo "$status_awk" | awk '{print $1}')
     seconds=$(echo "$status_awk" | awk '{print $4}')
 done
@@ -52,7 +52,7 @@ ConfCount=$( wc -l < allcandidatefilesSORTED.txt )
 
 Best=$( cat BestEnergy.txt)
 Difference=1
-if [[ $CycleCount -lt 3 ]] ; then 
+if [[ $CycleCount -gt 2 ]] ; then 
  PrevPrevCycleCount=$( echo "$CycleCount-2" | bc -l )
  PrevBest=$( cat parentdir/Cycle$PrevPrevCycleCount/BestEnergy.txt )
  Difference=$( echo "$PrevBest - $Best" | bc -l )
