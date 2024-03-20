@@ -1,4 +1,11 @@
 #!/bin/bash 
+
+#    This file originally comes from LEDE-CREST repository found at
+#    https://github.com/nking1/LEDE-CREST
+#    Changelog is provided in form of a commit.
+#    Modifications were implemented by Oskar Klimas, ACK Cyfronet AGH, Kraków, Poland
+#    The reasoning for these changes can be found in README.txt
+
 #SBATCH --account=ACCT 
 #SBATCH --ntasks=1 
 #SBATCH --mem-per-cpu=256M 
@@ -9,7 +16,7 @@
 
 # Load modules and set up variables
 
-module load StdEnv/2020 crest/2.12 
+ml crest_module
 
 # Clear previous process.sh results, if any
 
@@ -20,29 +27,29 @@ for d in ?Screen/
 
 # Split ensemble, and modify directory names for proper sorting
 
- cd "$d" 
+ cd "$d"
  crest -splitfile crest_ensemble.xyz 
- cd .. 
+ cd ..
  for s in "$d"SPLIT/STRUC??/ 
   do mv "$s" "$d"SPLIT/XSTRUC"${s: -3}" 
-  done 
+ done 
  for s in "$d"SPLIT/STRUC???/ 
   do mv "$s" "$d"SPLIT/YSTRUC"${s: -4}" 
-  done 
+ done 
  for s in "$d"SPLIT/STRUC????/ 
   do mv "$s" "$d"SPLIT/ZSTRUC"${s: -5}" 
-  done 
+ done 
 
 # Get RMSDs and paths
 
  for s in "$d"SPLIT/*/struc.xyz
   do crest -rmsd "$d"basename.xyz $s | tail -1 | awk '{print $NF}' >> "$d"rmsds.txt
   echo $s >> "$d"paths.txt
-  done
+ done
 
 # Set up variables for energies
 
- dos2unix A1/basename.xyz
+ #dos2unix A1/basename.xyz
  AtomCount=$(sed -n '1p' A1/basename.xyz)
  LinesPerMol=$(echo 2+$AtomCount | bc -l)
 
@@ -61,7 +68,7 @@ done
 
 for r in ?Screen/conflist.txt
  do ScreenArray+=("$r")
- done
+done
 
 # Merge conformer lists from all screenings
 
@@ -90,7 +97,7 @@ LENGTH=${#energyarr[@]}
 for (( i=0; i<=$((LENGTH-1)); i++ ))
  do tmp=$(echo "${energyarr[$i]} - ${energyarr[0]}" | bc -l)
  echo $tmp >> relativeenergies.txt
- done
+done
  
 # Convert to kcal/mol
 
@@ -99,7 +106,7 @@ readarray -t relativeenergyarr < relativeenergies.txt
 for (( i=0; i<=$((LENGTH-1)); i++ ))
  do tmp=$(echo "scale=6; ${relativeenergyarr[$i]}*627.5" | bc -l)
  echo $tmp >> ScaledEnergies.txt
- done
+done
  
 # Compute ratios
  
@@ -108,7 +115,7 @@ readarray -t relativekcalenergyarr < ScaledEnergies.txt
 for (( i=0; i<=$((LENGTH-1)); i++ ))
  do tmp=$(echo "scale=4; ${relativekcalenergyarr[$i]}/${rmsdarr[$i]}" | bc -l)
  echo $tmp >> ratios.txt
- done
+done
 
 readarray -t ratioarr < ratios.txt
 
@@ -142,45 +149,35 @@ echo ${filearr[0]} > backupcandidateslist.txt
 
 
 for (( i=1; i<=$((LENGTH-1)); i++ )); do
-	
 	#make sure below 0.5 ratio
 	if (( $(echo "${ratioarr[$i]} < $RATIOTHRESHOLD" | bc -l ) )); then
-	
 		#inner loop to test each pair
 		CANDIDATELENGTH=${#candidatefilearr[@]}
 		if (( $CANDIDATELENGTH < MaxConfCount )); then
 			for (( j=0; j<=$((CANDIDATELENGTH-1)); j++ )); do
-					
 				flag=true
-		
 				tmp=$(crest -rmsd ${filearr[$i]} ${candidatefilearr[$j]} | tail -1 | awk '{print $NF}')
-				
-			
 				if (( $(echo "$tmp < $RMSDTHRESHOLD" | bc -l ) )); then
 					flag=false
 					break
-				fi	
+				fi
 			done
-			
 			if $flag; then
-				for struc in ../Cycle?/?1/basename.xyz; do
+				for struc in parentdir/Cycle?/?1/basename.xyz; do
 					flag=true
 					tmp=$(crest -rmsd ${filearr[$i]} $struc | tail -1 | awk '{print $NF}')
-					
 					if (( $(echo "$tmp < $RMSDTHRESHOLD" | bc -l ) )); then
 						flag=false
 						break
 					fi
 				done
-				
 				if $flag; then
 					candidatefilearr+=(${filearr[$i]})
-          candidateenergyarr+=(${energyarr[$i]})
+					candidateenergyarr+=(${energyarr[$i]})
 				fi
-			fi		
+			fi
 		fi
 	fi
-
 done
 
 printf "%s\n" "${candidatefilearr[@]}" > allcandidatefilesSORTED.txt

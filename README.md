@@ -1,3 +1,51 @@
+Welcome to LEDE-CREST-sleeper!
+
+This software is based on LEDE-CREST at https://github.com/nking1/LEDE-CREST
+
+All additional scripts and modifications are published under GNU GPL-3.0 Licence
+Copyright (C) ACK Cyfronet AGH, Kraków, Poland
+Author of modifications: Oskar Klimas
+
+Main change:
+The goal of the "sleeper" addition to LEDE-CREST is to accomodate clusters which do not
+support starting a slurm job from a compute node (a job from within a job). To
+accomplish that, a `slurm_sleeper()` function was added. Depending on the status of the
+job and the time left in queue/running the function alternatively sleeps and checks the
+status of the job until its completion.
+
+**IMPORTANT!** LEDE-CREST-sleeper requires the use of [screen](https://www.gnu.org/software/screen/),
+[byobu](https://www.byobu.org/) or other window manager. It is used to allow a process
+to run on cluster's login node without the need to keep the client machine running. You
+can just leave the `LEDE-CREST.sh` script running there.
+
+Example usage:
+```
+screen
+./LEDE-CREST.sh >output.log 2>&1
+```
+Use `CTRL+A+D` to dettach screen window. When dettached, `LEDE-CREST.sh` is still running.
+
+To check on progress, use `squeue` to see if any job is still running.
+After that, return to screen to confirm that the script finished running.
+Returning to screen:
+```
+screen -r
+```
+To terminate a screen session use: `CTRL+D`.
+
+Other changes include:
+1. `SLURM-CHECK.sh` script that allows to manage the status of a job within LEDE-CREST scheme.
+   It allows for the `slurm_sleeper()` function to work.
+2. Variables `crest_module` and `xtb_module` to set the afformentioned modules from `LEDE-CREST.sh`.
+   Previously they were hardcoded in each script.
+3. Variable `parentdir` to derermine the directory of the `LEDE-CREST.sh` script, which is
+   necessary for `SLURM-CHECK.sh`.
+4. Changes in `sed` to accomodate 2. and 3.
+5. `dos2unix` command has been commented out, since compute nodes rarely have it installed.
+6. Minor changes, including formatting, spacing and readability.
+
+Original README.txt:
+
 Welcome to LEDE-CREST!
 
 LEDE-CREST (Low-Energy, Diversity-Enhanced variant on the Conformer-Rotamer Ensemble

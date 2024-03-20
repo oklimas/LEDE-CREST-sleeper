@@ -1,4 +1,11 @@
 #!/bin/bash 
+
+#    This file originally comes from LEDE-CREST repository found at
+#    https://github.com/nking1/LEDE-CREST
+#    Changelog is provided in form of a commit.
+#    Modifications were implemented by Oskar Klimas, ACK Cyfronet AGH, Kraków, Poland
+#    The reasoning for these changes can be found in README.txt
+
 #SBATCH --account=ACCT
 #SBATCH --ntasks=MTDTasks
 #SBATCH -N 1 
@@ -9,7 +16,7 @@
 #SBATCH --array=1-MTDCount
 #SBATCH --output=basename.out
 
-module load StdEnv/2020 xtb/6.5.0 
+ml xtb_module
 export OMP_STACKSIZE=Stacksize
 DIR=$(sed -n "${SLURM_ARRAY_TASK_ID}p" mtd.dir) 
 cd $DIR 

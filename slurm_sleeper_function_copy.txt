@@ -1,0 +1,55 @@
+#    ! This file is not a script !
+#    slurm_sleeper() - a function used to manage job status of tasks within
+#    LEDE-CREST scheme (more at https://github.com/nking1/LEDE-CREST).
+#    This function was not part of the original LEDE-CREST code, but is
+#    used in it's modified version LEDE-CREST-sleeper.
+#    Copyright (C) 2024 ACK Cyfronet AGH, Kraków, Poland
+#    Author: Oskar Klimas
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+slurm_sleeper() {
+local status_awk=$($parentdir/SLURM-CHECK.sh "$1")
+local status=$(echo "$status_awk" | awk '{print $1}')
+local seconds=$(echo "$status_awk" | awk '{print $4}')
+! [[ $status =~ ^[0-9]+$ ]] && { echo "ERROR status is not a number. Check SLURM_CHECK.sh for possible cause." ; exit 1 ; } # Sanity check
+while [[ "$status" -lt 4 ]]; do
+    case "$status" in
+        0)
+            echo "Error of the SLURM_CHECK.sh script."
+            exit 1
+            ;;
+        1)
+            # Unknown Time of start => check again in a minute
+            sleep_s=60
+            ;;
+        2)
+            # Pending => check infrequently
+            sleep_s=$(( seconds > 900 ? 300 : seconds / 3 ))
+            ;;
+        3)
+            # Running => check frequently, when job is close to time
+            # limit
+            sleep_s=$(( seconds > 3000 ? 300 : seconds / 10 ))
+            ;;
+    esac
+    [[ "$sleep_s" -lt 5 ]] && sleep_s=5 # this condition is necessary
+    # do not lower the minimal time below 5 s without the approval of
+    # your cluster admins
+    sleep "$sleep_s"s
+    status_awk=$($parentdir/SLURM-CHECK.sh "$1")
+     status=$(echo "$status_awk" | awk '{print $1}')
+    seconds=$(echo "$status_awk" | awk '{print $4}')
+done
+}

@@ -1,4 +1,11 @@
 #!/bin/bash 
+
+#    This file originally comes from LEDE-CREST repository found at
+#    https://github.com/nking1/LEDE-CREST
+#    Changelog is provided in form of a commit.
+#    Modifications were implemented by Oskar Klimas, ACK Cyfronet AGH, Kraków, Poland
+#    The reasoning for these changes can be found in README.txt
+
 #SBATCH --account=ACCT 
 #SBATCH --ntasks=ScreenTasks 
 #SBATCH -N 1 
@@ -9,8 +16,8 @@
 #SBATCH --array=1-ScreenCount
 #SBATCH --output=basenameScreen.out
 
-module load StdEnv/2020 crest/2.12 
-dos2unix AScreen/basename.xyz
+ml crest_module
+#dos2unix AScreen/basename.xyz
 LinesPerMol=$(echo 2+$(sed -n '1p' AScreen/basename.xyz) | bc -l)
 DIR=$(sed -n "${SLURM_ARRAY_TASK_ID}p" screen.dir) 
 cd $DIR 
@@ -22,5 +29,5 @@ for n in {1..4}
  Lines=$(wc -l ../${DIR::1}$n/xtb.trj | awk '{print $1}')
  Rem=$(echo "($Lines % $LinesPerMol)" | bc)
  head -n -$Rem ../${DIR::1}$n/xtb.trj >> xtb.trj
- done
+done
 crest -screen xtb.trj -T 28 -g Solvent --chrg CHARGE > basename.out

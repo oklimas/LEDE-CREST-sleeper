@@ -1,4 +1,11 @@
 #!/bin/bash
+
+#    This file originally comes from LEDE-CREST repository found at
+#    https://github.com/nking1/LEDE-CREST
+#    Changelog is provided in form of a commit.
+#    Modifications were implemented by Oskar Klimas, ACK Cyfronet AGH, Kraków, Poland
+#    The reasoning for these changes can be found in README.txt
+
 #SBATCH --account=ACCT
 #SBATCH --mail-type=all
 #SBATCH --mail-user=EMAIL
@@ -10,12 +17,12 @@
 
 mkdir CREGEN
 for ens in Cycle?/?Screen/crest_ensemble.xyz
-	do cat $ens >> CREGEN/ensembles.xyz
-	done
+ do cat $ens >> CREGEN/ensembles.xyz
+done
 cp Cycle1/A1/basename.xyz CREGEN
-module load StdEnv/2020 crest/2.12
+ml crest_module
 export OMPSTACKSIZE=Stacksize
 cd CREGEN
 crest basename.xyz --cregen ensembles.xyz --notopo -g Solvent -T 16 --chrg CHARGE
-cp crest_ensemble.xyz ../final_ensemble.xyz
-cp crest_best.xyz ../LEDE-CREST_best.xyz
+cp crest_ensemble.xyz parentdir/final_ensemble.xyz
+cp crest_best.xyz parentdir/LEDE-CREST_best.xyz
